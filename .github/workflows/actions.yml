@@ -3,6 +3,12 @@ name: Build and Push Docker Image
 env:
   DOCKER_IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/actions_nextjs
   DOCKER_REGISTRY: docker.io
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+  EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+  EC2_HOST: ${{ secrets.EC2_HOST }}
+  EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
 
 on:
   workflow_dispatch:
@@ -28,8 +34,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ env.DOCKER_REGISTRY }}
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -41,3 +47,16 @@ jobs:
             ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:latest
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:buildcache,mode=max
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ env.EC2_SSH_KEY }}
+          script: |
+            docker login -u ${{ env.DOCKER_USERNAME }} -p ${{ env.DOCKER_PASSWORD }}
+            docker pull ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+            docker stop actions_nextjs || true
+            docker rm actions_nextjs || true
+            docker run -d --name actions_nextjs -p 80:3000 ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:latest
