@@ -1,7 +1,7 @@
 name: Build and Push Docker Image
 
 env:
-  DOCKER_IMAGE_NAME: actions_nextjs
+  DOCKER_IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/actions_nextjs
   DOCKER_REGISTRY: docker.io
 
 on:
