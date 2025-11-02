@@ -60,8 +60,8 @@ jobs:
           username: ${{ env.EC2_USERNAME }}
           key_path: key.pem
           script: |
-            docker login -u ${{ env.DOCKER_USERNAME }} -p ${{ env.DOCKER_PASSWORD }}
-            docker pull ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:latest
-            docker stop actions_nextjs || true
-            docker rm actions_nextjs || true
-            docker run -d --name actions_nextjs -p 80:3000 ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+            sudo docker login -u ${{ env.DOCKER_USERNAME }} -p ${{ env.DOCKER_PASSWORD }}
+            sudo docker pull ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+            sudo docker stop actions_nextjs || true
+            sudo docker rm actions_nextjs || true
+            sudo docker run -d --name actions_nextjs -p 80:3000 ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:latest
