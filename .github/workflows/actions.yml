@@ -1,10 +1,10 @@
 name: Build and Push Docker Image
 
 env:
-  DOCKER_IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/actions_nextjs
-  DOCKER_REGISTRY: docker.io
-  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  DOCKER_IMAGE_NAME: ${{ github.repository }}
+  DOCKER_REGISTRY: ghcr.io
+  DOCKER_USERNAME: ${{ github.actor }}
+  DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
   EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
   EC2_HOST: ${{ secrets.EC2_HOST }}
@@ -20,6 +20,9 @@ jobs:
   build-and-push-landing-page:
     name: Build and Push Landing Page Docker Image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout code
@@ -30,7 +33,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Docker Registry
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.DOCKER_REGISTRY }}
@@ -48,19 +51,14 @@ jobs:
           cache-from: type=registry,ref=${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:buildcache,mode=max
 
-      - name: Setup SSH key
-        run: |
-          echo -e "${{ env.EC2_SSH_KEY }}" > key.pem
-          chmod 600 key.pem
-
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
         with:
           host: ${{ env.EC2_HOST }}
           username: ${{ env.EC2_USERNAME }}
-          key_path: key.pem
+          key: ${{ env.EC2_SSH_KEY }}
           script: |
-            sudo docker login -u ${{ env.DOCKER_USERNAME }} -p ${{ env.DOCKER_PASSWORD }}
+            echo ${{ env.DOCKER_PASSWORD }} | sudo docker login ghcr.io -u ${{ env.DOCKER_USERNAME }} --password-stdin
             sudo docker pull ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:latest
             sudo docker stop actions_nextjs || true
             sudo docker rm actions_nextjs || true
