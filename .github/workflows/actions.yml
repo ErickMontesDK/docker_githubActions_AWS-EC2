@@ -1,7 +1,7 @@
 name: Build and Push Docker Image
 
 env:
-  DOCKER_IMAGE_NAME: ${{ github.repository }}
+  DOCKER_IMAGE_NAME: erickmontedk/docker_githubactions_aws-ec2
   DOCKER_REGISTRY: ghcr.io
   DOCKER_USERNAME: ${{ github.actor }}
   DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
