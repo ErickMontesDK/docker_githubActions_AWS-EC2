@@ -10,6 +10,9 @@ env:
   EC2_HOST: ${{ secrets.EC2_HOST }}
   EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
 
+  AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+  LAMBDA_FUNCTION_NAME: ${{ secrets.LAMBDA_FUNCTION_NAME }}
+
 on:
   workflow_dispatch:
   push:
@@ -52,6 +55,7 @@ jobs:
           cache-to: type=registry,ref=${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:buildcache,mode=max
 
       - name: Deploy to EC2
+        id: deploy  
         uses: appleboy/ssh-action@master
         with:
           host: ${{ env.EC2_HOST }}
@@ -63,3 +67,35 @@ jobs:
             sudo docker stop actions_nextjs || true
             sudo docker rm actions_nextjs || true
             sudo docker run -d --name actions_nextjs -p 80:3000 ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+
+      - name: Invoke Lambda
+        if: always()  # Se ejecuta pase lo que pase
+        run: |
+          STATUS="${{ job.status }}"
+          if [ "$STATUS" = "success" ]; then
+            MESSAGE="Deploy in EC2 succeeded. Repo: ${{ github.repository }}, Commit: ${{ github.sha }}, Run ID: ${{ github.run_id }}"
+          else
+            MESSAGE="Deploy in EC2 failed. Repo: ${{ github.repository }}, Commit: ${{ github.sha }}, Run ID: ${{ github.run_id }}. Error in step: ${{ steps.deploy.outcome || 'unknown' }}"
+          fi
+          
+          aws lambda invoke \
+            --function-name "${{ env.LAMBDA_FUNCTION_NAME }}" \
+            --payload '{
+              "status": "'"$STATUS"'",
+              "message": "'"$MESSAGE"'",
+              "repo": "${{ github.repository }}",
+              "commit": "${{ github.sha }}"
+            }' \
+            response.json
+          
+          echo "Response from Lambda:"
+          cat response.json
+        env:
+          AWS_REGION: ${{ env.AWS_DEFAULT_REGION }} 
