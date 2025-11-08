@@ -85,17 +85,26 @@ jobs:
             MESSAGE="Deploy in EC2 failed. Repo: ${{ github.repository }}, Commit: ${{ github.sha }}, Run ID: ${{ github.run_id }}. Error in step: ${{ steps.deploy.outcome || 'unknown' }}"
           fi
           
+          # Crea el payload JSON en un archivo temporal
+          cat > payload.json << EOF
+          {
+            "status": "$STATUS",
+            "message": "$MESSAGE",
+            "repo": "${{ github.repository }}",
+            "commit": "${{ github.sha }}"
+          }
+          EOF
+          
+          # Invoca con --payload-file (evita problemas de base64/escapes)
           aws lambda invoke \
             --function-name "${{ env.LAMBDA_FUNCTION_NAME }}" \
-            --payload '{
-              "status": "'"$STATUS"'",
-              "message": "'"$MESSAGE"'",
-              "repo": "${{ github.repository }}",
-              "commit": "${{ github.sha }}"
-            }' \
+            --payload-file payload.json \
             response.json
           
           echo "Response from Lambda:"
           cat response.json
+          
+          # Limpia el archivo temporal
+          rm payload.json
         env:
-          AWS_REGION: ${{ env.AWS_DEFAULT_REGION }} 
+          AWS_REGION: ${{ env.AWS_DEFAULT_REGION }}
