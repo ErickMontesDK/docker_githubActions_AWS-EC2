@@ -87,14 +87,14 @@ jobs:
           ACTOR="${{ github.actor }}"
           TIMESTAMP=$(date)
 
-          RESPONSE=$(curl -s -X POST ${{env.LAMBDA_URL}}) \
+          RESPONSE=$(curl -s -X POST ${{env.LAMBDA_URL}} \
             -H "Content-Type: application/json" \
             -d "{\"status\": \"$STATUS\", 
             \"message\": \"$MESSAGE\", 
             \"repo\": \"${{ github.repository }}\", 
             \"commit\": \"$COMMIT_SHA \"}"
             \"triggered_by\": \"$ACTOR\"}"
-            \"timestamp\": \"$TIMESTAMP\"}"
+            \"timestamp\": \"$TIMESTAMP\"}")
 
       
           echo "Response from Lambda:"
