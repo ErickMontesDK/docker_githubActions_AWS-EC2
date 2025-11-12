@@ -92,9 +92,10 @@ jobs:
             -d "{\"status\": \"$STATUS\", 
             \"message\": \"$MESSAGE\", 
             \"repo\": \"${{ github.repository }}\", 
-            \"commit\": \"$COMMIT_SHA \"}"
-            \"triggered_by\": \"$ACTOR\"}"
-            \"timestamp\": \"$TIMESTAMP\"}")
+            \"commit\": \"$COMMIT_SHA \",
+            \"triggered_by\": \"$ACTOR\",
+            \"timestamp\": \"$TIMESTAMP\"
+            }")
 
       
           echo "Response from Lambda:"
